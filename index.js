@@ -40,22 +40,17 @@ app.get("/", (req, res) => {
         <style>
             body { font-family: sans-serif; margin: 24px; }
             input { width: 100%; padding: 10px; font-size: 16px; }
-            p { font-size: 14px; color: gray; margin-top: 8px; }
         </style>
     </head>
     <body>
         <input id="urlInput" type="text" placeholder="Enter full URL, e.g. https://example.com" />
-        <p>Press '!' to open the entered URL via proxy in a new tab.</p>
 
         <script>
             const input = document.getElementById('urlInput');
 
             function openProxy() {
                 const url = input.value.trim();
-                if (!url.startsWith("http")) {
-                    alert("Please enter a valid full URL starting with http or https.");
-                    return;
-                }
+                if (!url.startsWith("http")) return; // silently ignore invalid URLs
                 window.open("/" + url, "_blank");
             }
 
