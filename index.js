@@ -38,25 +38,54 @@ app.get("/", (req, res) => {
         <meta charset="utf-8" />
         <title>Proxy Input</title>
         <style>
-            body { font-family: sans-serif; margin: 24px; }
-            input { width: 100%; padding: 10px; font-size: 16px; }
+            body { font-family: sans-serif; margin: 24px; position: relative; }
+            input { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
+            #status { 
+                position: absolute; top: 10px; right: 10px; 
+                font-size: 14px; color: green; display: none;
+            }
         </style>
     </head>
     <body>
         <input id="urlInput" type="text" placeholder="Enter full URL, e.g. https://example.com" />
+        <div id="status">Opening...</div>
 
         <script>
             const input = document.getElementById('urlInput');
+            const status = document.getElementById('status');
+
+            function showStatus() {
+                status.style.display = 'block';
+                setTimeout(() => status.style.display = 'none', 1000); // hide after 1 second
+            }
 
             function openProxy() {
                 const url = input.value.trim();
-                if (!url.startsWith("http")) return; // silently ignore invalid URLs
-                window.open("/" + url, "_blank");
+                if (!url || !url.startsWith("http")) return;
+
+                showStatus(); // show opening indicator
+
+                const proxiedPath = "/" + url;
+                const newTab = window.open("about:blank", "_blank");
+
+                if (newTab) {
+                    try {
+                        newTab.location.href = proxiedPath;
+                    } catch (err) {
+                        window.open(proxiedPath, "_blank");
+                    }
+                } else {
+                    window.open(proxiedPath, "_blank");
+                }
             }
 
+            // Trigger only with the '!' key
             document.addEventListener('keydown', function(event) {
                 if (event.key === '!') openProxy();
             });
+
+            // Focus input on load
+            window.addEventListener('load', () => input.focus());
         </script>
     </body>
     </html>
