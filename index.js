@@ -23,13 +23,13 @@ app.use((req, res, next) => {
 
 // ✅ 3. Rate limiting
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   max: 30,
   message: "Rate limit exceeded. Please try again later."
 });
 app.use(limiter);
 
-// ✅ 4a. Serve minimal proxy page at "/"
+// ✅ 4a. Minimal proxy page
 app.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -38,12 +38,9 @@ app.get("/", (req, res) => {
         <meta charset="utf-8" />
         <title>Proxy Input</title>
         <style>
-            body { font-family: sans-serif; margin: 24px; position: relative; }
+            body { font-family: sans-serif; margin: 24px; }
             input { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
-            #status { 
-                position: absolute; top: 10px; right: 10px; 
-                font-size: 14px; color: green; display: none;
-            }
+            #status { position: absolute; top: 10px; right: 10px; font-size: 14px; color: green; display: none; }
         </style>
     </head>
     <body>
@@ -56,30 +53,63 @@ app.get("/", (req, res) => {
 
             function showStatus() {
                 status.style.display = 'block';
-                setTimeout(() => status.style.display = 'none', 1000); // hide after 1 second
+                setTimeout(() => status.style.display = 'none', 1000);
             }
 
             function openProxy() {
                 const url = input.value.trim();
                 if (!url || !url.startsWith("http")) return;
 
-                showStatus(); // show opening indicator
+                showStatus();
 
                 const proxiedPath = "/" + url;
                 const newTab = window.open("about:blank", "_blank");
 
                 if (newTab) {
                     try {
-                        newTab.location.href = proxiedPath;
+                        // Inject iframe inside about:blank
+                        const html = \`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Proxied Site</title>
+                            <style>
+                                html, body { margin:0; height:100%; overflow:hidden; }
+                                iframe { width:100%; height:100%; border:0; }
+                            </style>
+                        </head>
+                        <body>
+                            <iframe src="\${proxiedPath}" sandbox="allow-same-origin allow-forms allow-scripts allow-popups"></iframe>
+                            <script>
+                                // Fallback: if iframe is blocked, navigate the tab
+                                const iframe = document.querySelector('iframe');
+                                iframe.onerror = () => { window.location.href = "\${proxiedPath}"; };
+                                iframe.onload = () => {
+                                    // Some sites still may block scripts; fallback after 2 seconds if iframe is blank
+                                    setTimeout(() => {
+                                        if (!iframe.contentDocument || !iframe.contentDocument.body.innerHTML.trim()) {
+                                            window.location.href = "\${proxiedPath}";
+                                        }
+                                    }, 2000);
+                                };
+                            <\/script>
+                        </body>
+                        </html>
+                        \`;
+
+                        newTab.document.open();
+                        newTab.document.write(html);
+                        newTab.document.close();
                     } catch (err) {
                         window.open(proxiedPath, "_blank");
                     }
                 } else {
+                    // Popup blocked — fallback
                     window.open(proxiedPath, "_blank");
                 }
             }
 
-            // Trigger only with the '!' key
+            // Trigger only with '!' key
             document.addEventListener('keydown', function(event) {
                 if (event.key === '!') openProxy();
             });
@@ -92,9 +122,9 @@ app.get("/", (req, res) => {
   `);
 });
 
-// ✅ 4b. Proxy logic for all other routes
+// ✅ 4b. Proxy logic
 app.use(async (req, res) => {
-  const targetUrl = req.url.slice(1); // remove leading "/"
+  const targetUrl = req.url.slice(1);
   if (!targetUrl.startsWith("http")) {
     return res.status(400).send("Please provide a full URL, e.g. /https://example.com");
   }
