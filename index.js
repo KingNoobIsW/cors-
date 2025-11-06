@@ -23,57 +23,49 @@ app.use((req, res, next) => {
 
 // ✅ 3. Rate limiting
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   max: 30,
   message: "Rate limit exceeded. Please try again later."
 });
 app.use(limiter);
 
-// ✅ 4a. Serve secret dynamic iframe page at "/"
+// ✅ 4a. Serve secret dynamic proxy page at "/"
 app.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8" />
-        <title>Dynamic Proxy Iframe</title>
+        <title>Dynamic Proxy Opener</title>
         <style>
-            body { font-family: sans-serif; }
-            #container { margin: 24px; }
-            #iframe { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; border: 0; z-index: 999; background: white; }
+            body { font-family: sans-serif; margin: 24px; }
             input { width: 80%; padding: 6px; margin-right: 6px; }
             button { padding: 6px 12px; }
         </style>
     </head>
     <body>
-        <div id="container">
-            <input id="urlInput" type="text" placeholder="Enter full URL, e.g. https://example.com" />
-            <button id="openBtn">Open</button>
-            <p>Press '!' to open iframe with entered URL.</p>
-        </div>
-        <iframe id="iframe" sandbox="allow-forms allow-same-origin" title="Embedded site"></iframe>
+        <h2>Secret Proxy Opener</h2>
+        <input id="urlInput" type="text" placeholder="Enter full URL, e.g. https://example.com" />
+        <button id="openBtn">Open</button>
+        <p>Press '!' to open the entered URL via proxy in a new tab.</p>
 
         <script>
             const input = document.getElementById('urlInput');
-            const iframe = document.getElementById('iframe');
-            const container = document.getElementById('container');
             const openBtn = document.getElementById('openBtn');
 
-            function openIframe() {
-                let url = input.value.trim();
+            function openProxy() {
+                const url = input.value.trim();
                 if (!url.startsWith("http")) {
                     alert("Please enter a valid full URL starting with http or https.");
                     return;
                 }
-                // Add proxy prefix
-                iframe.src = "/" + url;
-                container.style.display = 'none';
-                iframe.style.display = 'block';
+                // Open the URL through your proxy in a new tab
+                window.open("/" + url, "_blank");
             }
 
-            openBtn.addEventListener('click', openIframe);
+            openBtn.addEventListener('click', openProxy);
             document.addEventListener('keydown', function(event) {
-                if (event.key === '!') openIframe();
+                if (event.key === '!') openProxy();
             });
         </script>
     </body>
