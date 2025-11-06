@@ -23,35 +23,32 @@ app.use((req, res, next) => {
 
 // ✅ 3. Rate limiting
 const limiter = rateLimit({
-  windowMs: 60 * 1000,
+  windowMs: 60 * 1000, // 1 minute
   max: 30,
   message: "Rate limit exceeded. Please try again later."
 });
 app.use(limiter);
 
-// ✅ 4a. Serve secret dynamic proxy page at "/"
+// ✅ 4a. Serve minimal proxy page at "/"
 app.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8" />
-        <title>Dynamic Proxy Opener</title>
+        <title>Proxy Input</title>
         <style>
             body { font-family: sans-serif; margin: 24px; }
-            input { width: 80%; padding: 6px; margin-right: 6px; }
-            button { padding: 6px 12px; }
+            input { width: 100%; padding: 10px; font-size: 16px; }
+            p { font-size: 14px; color: gray; margin-top: 8px; }
         </style>
     </head>
     <body>
-        <h2>Secret Proxy Opener</h2>
         <input id="urlInput" type="text" placeholder="Enter full URL, e.g. https://example.com" />
-        <button id="openBtn">Open</button>
         <p>Press '!' to open the entered URL via proxy in a new tab.</p>
 
         <script>
             const input = document.getElementById('urlInput');
-            const openBtn = document.getElementById('openBtn');
 
             function openProxy() {
                 const url = input.value.trim();
@@ -59,11 +56,9 @@ app.get("/", (req, res) => {
                     alert("Please enter a valid full URL starting with http or https.");
                     return;
                 }
-                // Open the URL through your proxy in a new tab
                 window.open("/" + url, "_blank");
             }
 
-            openBtn.addEventListener('click', openProxy);
             document.addEventListener('keydown', function(event) {
                 if (event.key === '!') openProxy();
             });
