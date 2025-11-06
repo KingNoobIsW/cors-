@@ -29,7 +29,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// ✅ 4a. Minimal proxy page
+// ✅ 4a. Serve minimal proxy page at "/"
 app.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -62,13 +62,12 @@ app.get("/", (req, res) => {
 
                 showStatus();
 
-                const proxiedPath = "/" + url;
+                // Open about:blank first
                 const newTab = window.open("about:blank", "_blank");
 
                 if (newTab) {
-                    try {
-                        // Inject iframe inside about:blank
-                        const html = \`
+                    // Inject iframe dynamically
+                    const html = \`
                         <!DOCTYPE html>
                         <html>
                         <head>
@@ -79,42 +78,25 @@ app.get("/", (req, res) => {
                             </style>
                         </head>
                         <body>
-                            <iframe src="\${proxiedPath}" sandbox="allow-same-origin allow-forms allow-scripts allow-popups"></iframe>
-                            <script>
-                                // Fallback: if iframe is blocked, navigate the tab
-                                const iframe = document.querySelector('iframe');
-                                iframe.onerror = () => { window.location.href = "\${proxiedPath}"; };
-                                iframe.onload = () => {
-                                    // Some sites still may block scripts; fallback after 2 seconds if iframe is blank
-                                    setTimeout(() => {
-                                        if (!iframe.contentDocument || !iframe.contentDocument.body.innerHTML.trim()) {
-                                            window.location.href = "\${proxiedPath}";
-                                        }
-                                    }, 2000);
-                                };
-                            <\/script>
+                            <iframe src="/\${url}" sandbox="allow-same-origin allow-forms allow-scripts allow-popups"></iframe>
                         </body>
                         </html>
-                        \`;
+                    \`;
 
-                        newTab.document.open();
-                        newTab.document.write(html);
-                        newTab.document.close();
-                    } catch (err) {
-                        window.open(proxiedPath, "_blank");
-                    }
+                    newTab.document.open();
+                    newTab.document.write(html);
+                    newTab.document.close();
                 } else {
-                    // Popup blocked — fallback
-                    window.open(proxiedPath, "_blank");
+                    // fallback if popup blocked
+                    window.open("/" + url, "_blank");
                 }
             }
 
-            // Trigger only with '!' key
+            // Only trigger with the '!' key
             document.addEventListener('keydown', function(event) {
                 if (event.key === '!') openProxy();
             });
 
-            // Focus input on load
             window.addEventListener('load', () => input.focus());
         </script>
     </body>
@@ -122,7 +104,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// ✅ 4b. Proxy logic
+// ✅ 4b. Proxy logic for all other routes
 app.use(async (req, res) => {
   const targetUrl = req.url.slice(1);
   if (!targetUrl.startsWith("http")) {
