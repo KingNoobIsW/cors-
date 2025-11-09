@@ -36,7 +36,7 @@ app.get("/", (req, res) => {
     <html>
     <head>
         <meta charset="utf-8" />
-        <title>Proxy Input</title>
+        <title>Input</title>
         <style>
             body { font-family: sans-serif; margin: 24px; }
             input { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; }
